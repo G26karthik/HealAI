@@ -5,6 +5,7 @@
   "type": "module",
   "description": "P21 — Urgency-aware healthcare access, booking and emergency dispatch",
   "scripts": {
+    "setup": "node scripts/setup.mjs",
     "dev": "concurrently -n api,web,ml -c blue,magenta,yellow \"npm:dev:api\" \"npm:dev:web\" \"npm:dev:ml\"",
     "dev:api": "npm --prefix server run dev",
     "dev:web": "npm --prefix client run dev",

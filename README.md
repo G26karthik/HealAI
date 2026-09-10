@@ -120,47 +120,184 @@ attributing to the chosen tier inverts the meaning whenever that tier is a low-u
 
 ---
 
-## Running it
+## Getting started
 
-**Prerequisites:** Node 20+, Python 3.10+, a MongoDB Atlas cluster, a Gemini API key, a Cloudinary
-account.
+**Never used Git or a terminal? Start here.** Follow every step in order. It takes about
+20 minutes, most of which is downloads running by themselves.
 
-```bash
-# 1. install
-npm install
-npm --prefix client install
-npm --prefix server install
-python -m venv ml-svc/.venv
-ml-svc/.venv/Scripts/pip install torch --index-url https://download.pytorch.org/whl/cpu
-ml-svc/.venv/Scripts/pip install -r ml-svc/requirements.txt
+---
 
-# 2. configure — copy the template and fill in your own keys
-cp server/.env.example server/.env
+### Step 1 — Install four programs (one time only)
 
-# 3. train the urgency model (~60s on CPU)
+| Program | Where | Notes |
+|---|---|---|
+| **Node.js** | [nodejs.org](https://nodejs.org) | Pick the big green **LTS** button |
+| **Python** | [python.org/downloads](https://www.python.org/downloads/) | ⚠️ **Tick "Add python.exe to PATH"** on the first install screen |
+| **Git** | [git-scm.com/downloads](https://git-scm.com/downloads) | Click Next through everything |
+| **VS Code** | [code.visualstudio.com](https://code.visualstudio.com) | The editor we use |
+
+> The Python **"Add to PATH"** checkbox is easy to miss and is the single most common reason setup
+> fails. If you missed it, re-run the installer and choose *Modify*.
+
+**Restart your computer after installing.** Windows will not see the new programs until you do.
+
+---
+
+### Step 2 — Download the code
+
+Open VS Code → **Terminal** menu → **New Terminal**. A panel opens at the bottom. Type:
+
+```powershell
+cd Desktop
+git clone https://github.com/G26karthik/HealAI.git
+cd HealAI
+```
+
+<details>
+<summary><strong>What did that just do?</strong></summary>
+
+- `cd Desktop` — move into your Desktop folder
+- `git clone …` — download a copy of the project from GitHub into a new `HealAI` folder
+- `cd HealAI` — move into it
+
+You now have the whole project on your machine. Everything from here runs inside this folder.
+</details>
+
+Now open the folder in VS Code: **File → Open Folder…** → pick `HealAI`. Open a new terminal
+(**Terminal → New Terminal**) and it will already be in the right place.
+
+---
+
+### Step 3 — Install everything
+
+```powershell
+npm run setup
+```
+
+This takes 5–15 minutes and prints its progress. It installs the app's packages, creates the
+Python environment, downloads PyTorch (a big file — be patient), and creates your config file.
+
+If it stops with a red ✗, read the message: it names the problem and what to do. Fixing that and
+running `npm run setup` again is always safe.
+
+---
+
+### Step 4 — Add the keys
+
+The app needs four credentials. **They are not in the repository on purpose** — API keys must never
+be put on GitHub, where anyone could find and use them.
+
+In VS Code's file list on the left, open `server` → `.env` and fill in:
+
+```
+MONGODB_URI=              the database
+GEMINI_API_KEY=           reads what the patient typed
+CLOUDINARY_CLOUD_NAME=    stores photos
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+```
+
+**Ask your team lead for these values.** Paste each one directly after its `=`, with no spaces and
+no quote marks. Save with `Ctrl+S`.
+
+> **No keys yet?** You can still run and explore the app. Set `GEMINI_MOCK=true` and it uses
+> built-in sample answers. Only `MONGODB_URI` is truly required — without it nothing can be saved.
+
+---
+
+### Step 5 — Build the AI model and the test data
+
+```powershell
 npm run train
+```
 
-# 4. seed the synthetic world
+Takes about a minute. It trains the urgency model and prints its accuracy. You only need to do this
+once.
+
+```powershell
 npm run seed
+```
 
-# 5. run everything
+Takes seconds. It creates the pretend hospital world: 16 ambulances, 24 doctors, 12 pharmacies.
+
+---
+
+### Step 6 — Start the app
+
+```powershell
 npm run dev
 ```
 
-| Service | URL |
+**Leave this running.** Three colour-coded services start together — `[api]`, `[web]`, `[ml]`.
+Wait for these three lines:
+
+```
+[ml]   Uvicorn running on http://127.0.0.1:8000
+[api]  http://localhost:5000
+[web]  ➜  Local:   http://localhost:5173/
+```
+
+Then open **<http://localhost:5173>** in your browser.
+
+You should see the app with **four green dots** in the top-right corner. Green means every service
+is healthy. To stop everything, click the terminal and press `Ctrl + C`.
+
+---
+
+### Every day after that
+
+You only do Steps 1–5 once. From then on it is:
+
+```powershell
+cd Desktop\HealAI
+git pull          # get your teammates' latest changes
+npm run dev       # start it
+```
+
+If a teammate added a new package, `git pull` then `npm run setup` again.
+
+---
+
+### Where things are
+
+| URL | What it is |
 |---|---|
-| App | http://localhost:5173 |
-| API health | http://localhost:5000/api/health |
-| Model service | http://localhost:8000/health |
-| Interactive model tester | http://localhost:8000/docs |
+| <http://localhost:5173> | **The app** — this is the one you want |
+| <http://localhost:5000/api/health> | Is the backend alive, and are its services connected |
+| <http://localhost:8000/docs> | A page for testing the AI model by hand |
 
-`RUNBOOK.md` has a plain-English guide, test cases and a troubleshooting table.
+---
 
-### Useful settings
+### When something goes wrong
+
+| What you see | What to do |
+|---|---|
+| `'npm' is not recognized` | Node isn't installed, or you didn't restart after installing |
+| `'git' is not recognized` | Same, for Git |
+| `Python was not found` | You missed the **Add to PATH** tick box. Re-run the Python installer → *Modify* |
+| `port 5000 is already in use` | The app is already running in another terminal. Press `Ctrl+C` there, or close it |
+| Four dots aren't all green | A service is down. The colour tag in the terminal — `[api]`, `[web]`, `[ml]` — tells you which |
+| `"mongo": false` | `MONGODB_URI` is missing or wrong in `server/.env`. **Restart after editing it** — config is only read at startup |
+| `"gemini": "mock"` | No Gemini key found. The app still works using sample answers |
+| `model_loaded: false` | Run `npm run train`, then restart |
+| Nothing works after `git pull` | Run `npm run setup` again |
+
+**The golden rule:** the coloured tag in the terminal tells you which part is unhappy.
+`[api]` = backend, `[web]` = the website, `[ml]` = the AI model.
+
+`RUNBOOK.md` goes further — how to test the AI yourself, what the tiers mean, and how to use the
+chaos panel.
+
+---
+
+### Settings you may want to change
+
+Both live in `server/.env`. Restart the app after editing.
+
 | Variable | Purpose |
 |---|---|
-| `GEMINI_MOCK=true` | Serve canned fixtures instead of calling the API — the Gemini free tier is **20 requests/day** |
-| `SIM_SPEED` | Simulation acceleration, default `30` (a 15-minute ETA plays out in 30 seconds) |
+| `GEMINI_MOCK=true` | Stop calling the Gemini API and use built-in samples. **The free tier is only 20 requests per day** — use this while developing and save the real quota for the demo |
+| `SIM_SPEED` | How fast simulated ambulances move. Default `30` means a 15-minute journey plays out in 30 seconds. Set `1` for real time |
 
 ---
 
