@@ -15,11 +15,17 @@ is not sure about stop for a human.
 
 ## The users
 
-| User | What they do |
-|---|---|
-| **Patient / caller** | Describes the problem in their own words, sees the priority and why, picks an option, tracks arrival |
-| **Dispatcher** | Works an urgency-sorted queue, confirms or overrides what the model was unsure about, watches the live map, can break dependencies to test resilience |
-| **Doctor / pharmacy** | Receives bookings against real slot and stock constraints |
+| User | What they do | Account needed? |
+|---|---|---|
+| **Patient / caller** | Describes the problem in their own words, sees the priority and why, picks an option, tracks arrival | **No** — deliberately open |
+| **Dispatcher** | Works an urgency-sorted queue, confirms or overrides what the model was unsure about, watches the live map, can break dependencies to test resilience | Yes |
+| **Pharmacist** | Approves prescription-only and substituted items before they can be dispensed | Yes |
+| **Doctor / pharmacy** | Receives bookings against real slot and stock constraints | — |
+
+Roles are enforced by middleware on the **server**. Hiding a button is a courtesy to the user; it
+is not access control, and a dispatcher-only action stays dispatcher-only even if someone calls the
+endpoint directly. The patient path is left open on purpose: nobody should meet a sign-up wall in
+an emergency.
 
 ---
 
@@ -184,7 +190,7 @@ running `npm run setup` again is always safe.
 
 ### Step 4 — Add the keys
 
-The app needs four credentials. **They are not in the repository on purpose** — API keys must never
+The app needs five credentials. **They are not in the repository on purpose** — API keys must never
 be put on GitHub, where anyone could find and use them.
 
 In VS Code's file list on the left, open `server` → `.env` and fill in:
@@ -192,16 +198,28 @@ In VS Code's file list on the left, open `server` → `.env` and fill in:
 ```
 MONGODB_URI=              the database
 GEMINI_API_KEY=           reads what the patient typed
-CLOUDINARY_CLOUD_NAME=    stores photos
+CLOUDINARY_CLOUD_NAME=    stores prescription photos
 CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
+JWT_SECRET=               signs login tokens
 ```
 
-**Ask your team lead for these values.** Paste each one directly after its `=`, with no spaces and
-no quote marks. Save with `Ctrl+S`.
+**Ask your team lead for the first five.** Paste each one directly after its `=`, with no spaces
+and no quote marks. Save with `Ctrl+S`.
+
+`JWT_SECRET` you can generate yourself — any long random string will do:
+
+```powershell
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+> **Why it matters:** without it, a new signing key is created every time the server restarts,
+> which signs everyone out. During development the server restarts on every file save, so you
+> would be logged out constantly.
 
 > **No keys yet?** You can still run and explore the app. Set `GEMINI_MOCK=true` and it uses
-> built-in sample answers. Only `MONGODB_URI` is truly required — without it nothing can be saved.
+> built-in sample answers. Only `MONGODB_URI` is truly required — without it nothing can be saved
+> and you cannot sign in.
 
 ---
 
@@ -244,6 +262,39 @@ is healthy. To stop everything, click the terminal and press `Ctrl + C`.
 
 ---
 
+### Step 7 — Take the tour
+
+| Page | What to do there |
+|---|---|
+| **Home** `/` | The landing page. Tap *How it works* on any feature card for the technical version |
+| **Get help** `/help` | Describe a problem → see the priority and why → pick an ambulance or doctor → track it |
+| **Medicines** `/medicines` | Photograph a prescription → matched to pharmacies → pharmacist approves → order |
+| **Dispatcher** `/dispatch` | Live map, the queue, review the cases the AI was unsure about, and the chaos panel |
+| **Sign in** `/login` | Three one-click demo roles, or create a real account |
+
+**Sign in with a demo account** — no password needed, just click:
+
+| Role | What it unlocks |
+|---|---|
+| 🙋 **Patient** | Asking for help and tracking it |
+| 🎛️ **Dispatcher** | Confirming priorities, overriding the model, the chaos panel |
+| 💊 **Pharmacist** | Approving prescription items |
+
+You do **not** need an account to ask for help — that path is deliberately open, because nobody
+should hit a sign-up wall in an emergency. But dispatcher actions are enforced on the server, so
+the chaos toggles and the review queue will refuse you until you sign in as a dispatcher.
+
+**Three things worth trying:**
+
+1. Type *"chest pain and breathlessness for 30 minutes, he is 62"* on `/help`. Watch it come back
+   T1, then open **Why this one?** on the ambulance list — the nearest vehicle is often rejected.
+2. Sign in as **dispatcher**, then flip **Kill ML service** on the chaos panel and submit the same
+   sentence again. It still works, and says it is running in a reduced mode.
+3. Go to `/medicines` and upload any photo. It will find medicines, flag the prescription-only ones,
+   and refuse to place the order until a pharmacist name is entered.
+
+---
+
 ### Every day after that
 
 You only do Steps 1–5 once. From then on it is:
@@ -254,7 +305,33 @@ git pull          # get your teammates' latest changes
 npm run dev       # start it
 ```
 
-If a teammate added a new package, `git pull` then `npm run setup` again.
+---
+
+### Updating after someone else has pushed
+
+`git pull` brings the code, but **not** new packages or new config lines. If anything looks broken
+after pulling, run this — it is always safe and only takes a minute if nothing changed:
+
+```powershell
+git pull
+npm run setup     # installs any new packages
+npm run dev
+```
+
+> ⚠️ **`npm run setup` will never touch your existing `server/.env`** — deliberately, so it cannot
+> wipe your keys. That means **new settings are not added for you.** If a teammate adds a config
+> line, you have to copy it across by hand.
+>
+> Compare your `server/.env` against `server/.env.example` after any pull that changes it. Right
+> now the one most likely to be missing is **`JWT_SECRET`** — without it you get signed out every
+> time the server restarts.
+
+If the database looks wrong or the map is empty, rebuild the test world:
+
+```powershell
+npm run seed        # fresh ambulances, doctors, pharmacies
+npm run seed:demo   # the same, but also wipes old requests — use before a demo
+```
 
 ---
 
@@ -281,6 +358,11 @@ If a teammate added a new package, `git pull` then `npm run setup` again.
 | `"gemini": "mock"` | No Gemini key found. The app still works using sample answers |
 | `model_loaded: false` | Run `npm run train`, then restart |
 | Nothing works after `git pull` | Run `npm run setup` again |
+| Signed out every few seconds | `JWT_SECRET` is missing from `server/.env`. Copy the line from `.env.example` and generate a value |
+| `Sign in to do that` (401) | That action needs an account. Go to `/login` and use a demo role |
+| `This action is for dispatcher accounts` (403) | You are signed in, but as the wrong role. Sign out and pick **Dispatcher** |
+| `Cannot find module` after a pull | A new package was added. Run `npm run setup` |
+| Map is empty, no ambulances | Run `npm run seed` |
 
 **The golden rule:** the coloured tag in the terminal tells you which part is unhappy.
 `[api]` = backend, `[web]` = the website, `[ml]` = the AI model.
@@ -292,12 +374,14 @@ chaos panel.
 
 ### Settings you may want to change
 
-Both live in `server/.env`. Restart the app after editing.
+All live in `server/.env`. **Restart the app after editing** — config is only read at startup.
 
 | Variable | Purpose |
 |---|---|
+| `JWT_SECRET` | Signs login tokens. Set it, or everyone is signed out on every server restart |
 | `GEMINI_MOCK=true` | Stop calling the Gemini API and use built-in samples. **The free tier is only 20 requests per day** — use this while developing and save the real quota for the demo |
 | `SIM_SPEED` | How fast simulated ambulances move. Default `30` means a 15-minute journey plays out in 30 seconds. Set `1` for real time |
+| `GEMINI_TIMEOUT_MS` | How long to wait for the language AI before falling back. Default `15000` |
 
 ---
 
@@ -312,6 +396,8 @@ Both live in `server/.env`. Restart the app after editing.
 | **Leaflet + OpenStreetMap** | No API key, no billing, nothing to expire on event day |
 | **Socket.IO** | Vehicle positions and queue changes are push, not poll — with a polling backstop |
 | **Gemini with a response schema** | Constrains output to a fixed tag vocabulary, so free text can never reach the classifier as an unknown category |
+| **scrypt from Node's crypto**, not bcrypt | Memory-hard and constant-time, built in, and one fewer package to install on venue wifi |
+| **Server-side role middleware** | A hidden button is not access control. The same rules hold whether the request comes from our UI or from curl |
 
 ---
 
@@ -324,9 +410,15 @@ Both live in `server/.env`. Restart the app after editing.
   empirically-shaped spread. There is no real road network or traffic feed behind it.
 - The simulation runs at 30× real time by default. This is stated in the API and shown on screen.
 - Assignment is greedy per request with urgency ordering, not a global optimum.
+- Prescription transcription is best-effort. Handwriting is genuinely ambiguous, so every line is
+  matched against our own catalogue and every prescription-only or substituted item requires a
+  named pharmacist before it can be ordered.
+- Authentication is real (scrypt + JWT, server-enforced roles) but there is no email verification,
+  password reset, rate limiting or account recovery.
+- The `partner-operator` rung of the ambulance ladder is documented but has no integration behind
+  it — it always falls through to guided self-transport.
+- Substitution matches salt and strength only. It does not consider interactions or allergies.
 - No real identity verification, payments, telephony or hospital-system integration.
-- Prescription OCR (in progress) is best-effort and every prescription item requires pharmacist
-  confirmation before ordering.
 
 ## Next steps
 
@@ -342,12 +434,40 @@ Both live in `server/.env`. Restart the app after editing.
 ## Repository layout
 
 ```
-client/     React app — patient and dispatcher tabs
-server/     Express API, matcher, fallback ladders, simulation, audit log
-ml-svc/     FastAPI + PyTorch — train.py builds the model, app.py serves it
-shared/     enums.js — the single contract all three layers import
-PLAN.md     Build plan and rubric mapping
-RUNBOOK.md  Plain-English operating guide
+client/
+  src/pages/        Landing · PatientHome · Medicines · Dispatcher · Login
+  src/components/   TriageResult · OptionsList · PrescriptionFlow · MapView · RequestQueue
+  src/context/      AuthContext — token, current user, role helpers
+  src/lib/          api.js (axios + auth header) · socket.js
+
+server/
+  src/routes/       auth · requests · assignments · pharmacy · fleet
+  src/services/     triage · matcher · fallback · sim · eta · gemini · prescription · auth · audit
+  src/models.js     resources · requests · assignments · orders · users · medicines · auditLog
+  src/seed/seed.js  the deterministic synthetic world
+
+ml-svc/             FastAPI + PyTorch — train.py builds the model, app.py serves it
+shared/enums.js     the single contract all three layers import
+scripts/setup.mjs   one-command setup for a fresh machine
+
+README.md           this file
+RUNBOOK.md          plain-English operating guide: testing the AI, tiers, chaos panel
+PLAN.md             build plan and rubric mapping
 ```
 
-Built for the Engineering Day hackathon. Synthetic data only.
+### Where to start reading the code
+
+| If you want to understand… | Read |
+|---|---|
+| How urgency is decided | `ml-svc/train.py`, then `server/src/services/triage.js` |
+| How a provider is chosen | `server/src/services/matcher.js` — the cost function is the whole idea |
+| What happens when something is unavailable | `server/src/services/fallback.js` |
+| How vehicles move | `server/src/services/sim.js` |
+| How the AI is kept honest | `server/src/services/gemini.js` (guardrails) and `audit.js` |
+
+Everything shares one vocabulary — tiers, symptom tags, the model's 18 input features, zones — and
+it all lives in **`shared/enums.js`**. Change it there or the three layers will disagree.
+
+---
+
+Built for the Engineering Day hackathon. Synthetic data only. Not a diagnostic system.
