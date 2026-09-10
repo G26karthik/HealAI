@@ -11,6 +11,9 @@ is not sure about stop for a human.
 > **HealAI does not diagnose.** It assigns a *dispatch priority* and coordinates access. The model's
 > output vocabulary contains no medical condition, and that is enforced in code, not just in policy.
 
+**📖 Other guides:** [తెలుగు గైడ్](README.te.md) (team walkthrough) ·
+[Judges' guide](VIVA-GUIDE.md) (architecture + Q&A) · [Runbook](RUNBOOK.md) (operating notes)
+
 ---
 
 ## The users
@@ -450,7 +453,9 @@ ml-svc/             FastAPI + PyTorch — train.py builds the model, app.py serv
 shared/enums.js     the single contract all three layers import
 scripts/setup.mjs   one-command setup for a fresh machine
 
-README.md           this file
+README.md           this file — setup and reference
+README.te.md        తెలుగు గైడ్ — feature-by-feature walkthrough for the team
+VIVA-GUIDE.md       judges/invigilators: tech stack, architecture, Q&A prep (Telugu + English)
 RUNBOOK.md          plain-English operating guide: testing the AI, tiers, chaos panel
 PLAN.md             build plan and rubric mapping
 ```
