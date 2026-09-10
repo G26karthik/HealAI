@@ -1,0 +1,47 @@
+{
+  "model_version": "urgency-mlp-v1",
+  "feature_dim": 18,
+  "train_rows": 8000,
+  "test_accuracy": 0.8287,
+  "accuracy_on_confident": 0.8836,
+  "accuracy_on_abstained": 0.5359,
+  "abstain_rate": 0.158,
+  "temperature": 1.1396,
+  "ece_raw": 0.0289,
+  "ece_calibrated": 0.0175,
+  "t1_recall": 0.9328,
+  "t1_underrouted_to_t3_t4": 0,
+  "confusion_matrix": [
+    [
+      444,
+      32,
+      0,
+      0
+    ],
+    [
+      51,
+      163,
+      52,
+      0
+    ],
+    [
+      0,
+      31,
+      315,
+      38
+    ],
+    [
+      0,
+      0,
+      53,
+      321
+    ]
+  ],
+  "tiers": [
+    "T1",
+    "T2",
+    "T3",
+    "T4"
+  ],
+  "note": "Synthetic data from a documented rule process. Dispatch priority only, not a diagnosis."
+}

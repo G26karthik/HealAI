@@ -1,0 +1,7 @@
+# Install torch from the CPU index — the default wheel pulls ~2.5GB of CUDA.
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+#   pip install -r requirements.txt
+torch
+numpy
+fastapi
+uvicorn[standard]

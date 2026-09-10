@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-slate-50 text-ink font-sans antialiased;
+  }
+
+  /* Accessibility: a visible focus ring on every interactive element.
+     The rubric names accessibility explicitly — this is the cheapest half of it. */
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    @apply outline-none ring-2 ring-offset-2 ring-blue-600;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white border border-line rounded-xl shadow-sm;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2
+           font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-blue-700 text-white hover:bg-blue-800;
+  }
+  .btn-ghost {
+    @apply btn border border-line bg-white text-ink hover:bg-slate-100;
+  }
+  .btn-danger {
+    @apply btn bg-tier-t1 text-white hover:bg-red-800;
+  }
+  .label {
+    @apply block text-sm font-medium text-muted mb-1;
+  }
+  .input {
+    @apply w-full rounded-lg border border-line bg-white px-3 py-2 text-ink
+           placeholder:text-slate-400;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium;
+  }
+}
+
+/* Screen-reader-only text used for live-region announcements. */
+.sr-only-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

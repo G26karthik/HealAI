@@ -1,0 +1,28 @@
+{
+  "name": "mediroute-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "MediRoute — urgency-aware healthcare access & dispatch API",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "nodemon --quiet --watch src --watch ../shared --ext js,json src/index.js",
+    "start": "node src/index.js",
+    "seed": "node src/seed/seed.js",
+    "seed:demo": "node src/seed/seed.js --demo"
+  },
+  "dependencies": {
+    "@google/genai": "^2.21.0",
+    "axios": "^1.7.9",
+    "cloudinary": "^2.5.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mongoose": "^8.9.5",
+    "socket.io": "^4.8.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

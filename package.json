@@ -1,0 +1,20 @@
+{
+  "name": "mediroute",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "P21 — Urgency-aware healthcare access, booking and emergency dispatch",
+  "scripts": {
+    "dev": "concurrently -n api,web,ml -c blue,magenta,yellow \"npm:dev:api\" \"npm:dev:web\" \"npm:dev:ml\"",
+    "dev:api": "npm --prefix server run dev",
+    "dev:web": "npm --prefix client run dev",
+    "dev:ml": "ml-svc\\.venv\\Scripts\\python.exe -m uvicorn app:app --app-dir ml-svc --port 8000 --reload --reload-dir ml-svc",
+    "train": "ml-svc\\.venv\\Scripts\\python.exe ml-svc\\train.py",
+    "seed": "npm --prefix server run seed",
+    "seed:demo": "npm --prefix server run seed:demo",
+    "health": "node -e \"fetch('http://localhost:5000/api/health').then(r=>r.json()).then(d=>console.log(JSON.stringify(d,null,2)))\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
