@@ -196,6 +196,25 @@ const orderSchema = new Schema(
   { timestamps: true }
 );
 
+/* ---------------------------------------------------------------------------
+ * users — role decides what you are allowed to do, not just what you see.
+ * The password hash never leaves this collection: `select: false` keeps it out
+ * of every query that does not explicitly ask for it.
+ * ------------------------------------------------------------------------ */
+const userSchema = new Schema(
+  {
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true, index: true },
+    name: { type: String, required: true, trim: true },
+    passwordHash: { type: String, required: true, select: false },
+    role: { type: String, enum: ['patient', 'dispatcher', 'pharmacist'], default: 'patient', index: true },
+    language: { type: String, default: 'en' },
+    isDemo: { type: Boolean, default: false },
+    lastLoginAt: Date,
+  },
+  { timestamps: true }
+);
+
+export const User = model('User', userSchema);
 export const Order = model('Order', orderSchema);
 export const Resource = model('Resource', resourceSchema);
 export const Request = model('Request', requestSchema);

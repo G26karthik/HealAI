@@ -3,6 +3,49 @@ import { getChaos, getFleet, listRequests, resetChaos, setChaos } from '../lib/a
 import { socket, joinDispatchRoom } from '../lib/socket';
 import RequestQueue from '../components/RequestQueue';
 import MapView from '../components/MapView';
+import { useAuth } from '../context/AuthContext';
+
+/**
+ * Reviewing a priority and breaking a dependency are both dispatcher actions,
+ * and the server enforces that. This banner explains the refusal before the
+ * user runs into a 403, rather than after.
+ */
+function RoleGate() {
+  const { user, demoLogin } = useAuth();
+  const [busy, setBusy] = useState(false);
+  if (user?.role === 'dispatcher') return null;
+
+  return (
+    <div className="rounded-2xl border-2 border-amber-400 bg-amber-50 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="font-bold text-amber-900">
+            <span aria-hidden="true">🔒</span> You are viewing this read-only
+          </h2>
+          <p className="mt-0.5 text-sm text-amber-900">
+            {user
+              ? `You are signed in as ${user.role}. Confirming a priority or breaking a dependency needs a dispatcher account.`
+              : 'Sign in as a dispatcher to confirm priorities, override the model, and use the chaos panel.'}
+          </p>
+        </div>
+        <button
+          className="btn-primary shrink-0"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            try {
+              await demoLogin('dispatcher');
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          {busy ? 'Signing in…' : 'Sign in as dispatcher'}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 /**
  * Chaos panel — the demo's highest-value 30 lines of UI.
@@ -212,6 +255,7 @@ export default function Dispatcher() {
 
   return (
     <div className="space-y-4">
+      <RoleGate />
       <Kpis requests={requests} />
       <LiveMap fleet={fleet} tickData={tickData} />
       <div className="grid gap-4 lg:grid-cols-[1fr_360px]">

@@ -5,22 +5,34 @@
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
   }
   body {
     @apply bg-slate-50 text-ink font-sans antialiased;
   }
+  h1,
+  h2,
+  h3 {
+    @apply tracking-tight;
+  }
 
   /* Accessibility: a visible focus ring on every interactive element.
      The rubric names accessibility explicitly — this is the cheapest half of it. */
-  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
-    @apply outline-none ring-2 ring-offset-2 ring-blue-600;
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    @apply outline-none ring-2 ring-offset-2 ring-brand-500;
   }
 
+  /* Motion is decoration here, never information. Anyone who asks for less of
+     it loses nothing but the movement. */
   @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
     *,
     *::before,
     *::after {
       animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
     }
   }
@@ -28,30 +40,103 @@
 
 @layer components {
   .card {
-    @apply bg-white border border-line rounded-xl shadow-sm;
+    @apply bg-white border border-line rounded-xl shadow-soft;
   }
+  .card-hover {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-lift hover:border-brand-200;
+  }
+
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2
-           font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 font-semibold
+           transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed
+           active:scale-[.98];
   }
   .btn-primary {
-    @apply btn bg-blue-700 text-white hover:bg-blue-800;
+    @apply btn bg-brand-600 text-white hover:bg-brand-700 shadow-soft hover:shadow-glow;
   }
   .btn-ghost {
-    @apply btn border border-line bg-white text-ink hover:bg-slate-100;
+    @apply btn border border-line bg-white text-ink hover:bg-slate-50 hover:border-slate-300;
   }
   .btn-danger {
-    @apply btn bg-tier-t1 text-white hover:bg-red-800;
+    @apply btn bg-tier-t1 text-white hover:bg-red-800 shadow-soft;
   }
+  .btn-quiet {
+    @apply btn text-muted hover:bg-slate-100 hover:text-ink;
+  }
+
   .label {
     @apply block text-sm font-medium text-muted mb-1;
   }
   .input {
-    @apply w-full rounded-lg border border-line bg-white px-3 py-2 text-ink
-           placeholder:text-slate-400;
+    @apply w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-ink
+           placeholder:text-slate-400 transition-colors
+           focus:border-brand-400 focus:ring-2 focus:ring-brand-100;
   }
   .chip {
     @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium;
+  }
+
+  /* Section eyebrow above a heading */
+  .eyebrow {
+    @apply inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50
+           px-3 py-1 text-xs font-semibold uppercase tracking-wider text-brand-700;
+  }
+}
+
+@layer utilities {
+  /* The hero's living background: two slow-drifting colour blooms behind a
+     grid. Cheap (two blurred divs), and it stops entirely under
+     prefers-reduced-motion. */
+  .mesh::before,
+  .mesh::after {
+    content: '';
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(72px);
+    pointer-events: none;
+  }
+  .mesh::before {
+    width: 44rem;
+    height: 44rem;
+    top: -18rem;
+    right: -14rem;
+    background: radial-gradient(circle, rgba(61, 157, 174, 0.55), transparent 66%);
+    animation: drift 18s ease-in-out infinite;
+  }
+  .mesh::after {
+    width: 34rem;
+    height: 34rem;
+    bottom: -16rem;
+    left: -10rem;
+    background: radial-gradient(circle, rgba(185, 28, 28, 0.28), transparent 66%);
+    animation: drift 22s ease-in-out infinite reverse;
+  }
+
+  .grid-lines {
+    background-image: linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+    background-size: 46px 46px;
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-r from-brand-300 via-brand-100 to-white bg-clip-text text-transparent;
+  }
+
+  /* Reveal-on-scroll, driven by an IntersectionObserver adding .is-visible */
+  .reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal {
+      opacity: 1;
+      transform: none;
+    }
   }
 }
 

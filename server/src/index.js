@@ -12,6 +12,8 @@ import { requestsRouter } from './routes/requests.js';
 import { assignmentsRouter } from './routes/assignments.js';
 import { fleetRouter } from './routes/fleet.js';
 import { pharmacyRouter } from './routes/pharmacy.js';
+import { authRouter } from './routes/auth.js';
+import { attachUser, requireRole } from './services/auth.js';
 import { resumeRuns, startSim } from './services/sim.js';
 import { CHAOS_FLAGS, ZONES } from '../../shared/enums.js';
 
@@ -32,6 +34,12 @@ io.on('connection', (socket) => {
   socket.on('subscribe:dispatch', () => socket.join('dispatch'));
 });
 
+// Identify the caller on every route. Never rejects — most of the app is
+// deliberately usable as a guest, because a patient in an emergency must not
+// be stopped at a sign-up wall.
+app.use(attachUser);
+
+app.use('/api/auth', authRouter);
 app.use('/api/requests', requestsRouter);
 app.use('/api/assignments', assignmentsRouter);
 app.use('/api/fleet', fleetRouter);
@@ -63,9 +71,10 @@ app.get('/api/health', async (_req, res) => {
   });
 });
 
-/* Chaos toggles — driven from the dispatcher console during the demo. */
+/* Chaos toggles — driven from the dispatcher console during the demo.
+   Reading is open; breaking things deliberately is a dispatcher action. */
 app.get('/api/chaos', (_req, res) => res.json(chaos.all()));
-app.post('/api/chaos', (req, res) => {
+app.post('/api/chaos', requireRole('dispatcher'), (req, res) => {
   const { flag, value } = req.body || {};
   if (!CHAOS_FLAGS.includes(flag)) {
     return res.status(400).json({ error: `flag must be one of ${CHAOS_FLAGS.join(', ')}` });
@@ -74,7 +83,7 @@ app.post('/api/chaos', (req, res) => {
   io.to('dispatch').emit('chaos:changed', next);
   res.json(next);
 });
-app.post('/api/chaos/reset', (_req, res) => {
+app.post('/api/chaos/reset', requireRole('dispatcher'), (_req, res) => {
   const next = chaos.reset();
   io.to('dispatch').emit('chaos:changed', next);
   res.json(next);

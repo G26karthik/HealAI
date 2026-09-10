@@ -11,6 +11,7 @@ import { buildFeatures } from '../services/features.js';
 import { explainDecision, parseIntake } from '../services/gemini.js';
 import { requiresReview, triage } from '../services/triage.js';
 import { auditFor, logAi, logHuman } from '../services/audit.js';
+import { requireRole } from '../services/auth.js';
 import { REQUEST_STATES, SOURCES, SYMPTOM_IDS, TIERS } from '../../../shared/enums.js';
 
 export const requestsRouter = Router();
@@ -228,10 +229,13 @@ const ReviewSchema = z.object({
   reason: z.string().max(300).optional(),
 });
 
-requestsRouter.post('/:id/review', async (req, res, next) => {
+requestsRouter.post('/:id/review', requireRole('dispatcher'), async (req, res, next) => {
   try {
     if (!dbReady()) return res.status(503).json({ error: 'database unavailable' });
-    const { tier, reviewedBy, reason } = ReviewSchema.parse(req.body ?? {});
+    const { tier, reason } = ReviewSchema.parse(req.body ?? {});
+    // The reviewer is whoever is signed in, not whatever the client claims.
+    // An override on a medical priority has to be attributable to a person.
+    const reviewedBy = req.user.name;
 
     const request = await Request.findById(req.params.id);
     if (!request) return res.status(404).json({ error: 'not found' });
