@@ -146,6 +146,57 @@ const auditSchema = new Schema({
   degraded: { type: Boolean, default: false },
 });
 
+/* ---------------------------------------------------------------------------
+ * orders — a medicine request, after a pharmacist has signed off on it.
+ * Substitutions are recorded separately from what was asked for, because
+ * "you got something different from what the prescription said" is exactly the
+ * kind of change a patient and a regulator both need to be able to see.
+ * ------------------------------------------------------------------------ */
+const orderSchema = new Schema(
+  {
+    requestId: { type: Schema.Types.ObjectId, ref: 'Request', index: true },
+    pharmacyId: { type: Schema.Types.ObjectId, ref: 'Resource' },
+    pharmacyName: String,
+
+    items: {
+      type: [
+        {
+          requested: String, // as written on the prescription
+          medId: { type: Schema.Types.ObjectId, ref: 'Medicine' },
+          name: String,
+          strength: String,
+          qty: Number,
+          price: Number,
+          rxRequired: Boolean,
+          matchConfidence: Number,
+          substitutedFor: String, // set when a same-salt alternative was used
+          status: String, // in-stock | substituted | unavailable
+        },
+      ],
+      default: [],
+    },
+
+    prescriptionUrl: String, // Cloudinary
+    fulfilment: String, // delivery | pickup
+    deliveryFee: Number,
+    total: Number,
+    etaP50Min: Number,
+    etaP90Min: Number,
+
+    pharmacistApproval: {
+      required: { type: Boolean, default: false },
+      approvedBy: String,
+      approvedAt: Date,
+      notes: String,
+    },
+
+    status: { type: String, default: 'placed' },
+    fallbacksUsed: { type: [{ rung: String, note: String, at: Date }], default: [] },
+  },
+  { timestamps: true }
+);
+
+export const Order = model('Order', orderSchema);
 export const Resource = model('Resource', resourceSchema);
 export const Request = model('Request', requestSchema);
 export const Assignment = model('Assignment', assignmentSchema);

@@ -11,12 +11,14 @@ import { setIo } from './lib/realtime.js';
 import { requestsRouter } from './routes/requests.js';
 import { assignmentsRouter } from './routes/assignments.js';
 import { fleetRouter } from './routes/fleet.js';
+import { pharmacyRouter } from './routes/pharmacy.js';
 import { resumeRuns, startSim } from './services/sim.js';
 import { CHAOS_FLAGS, ZONES } from '../../shared/enums.js';
 
 const app = express();
 app.use(cors({ origin: env.clientOrigin, credentials: true }));
-app.use(express.json({ limit: '1mb' }));
+// 12mb because prescription photos arrive as base64 data URIs from the browser.
+app.use(express.json({ limit: '12mb' }));
 
 const server = http.createServer(app);
 export const io = new SocketServer(server, {
@@ -33,6 +35,7 @@ io.on('connection', (socket) => {
 app.use('/api/requests', requestsRouter);
 app.use('/api/assignments', assignmentsRouter);
 app.use('/api/fleet', fleetRouter);
+app.use('/api/pharmacy', pharmacyRouter);
 
 /* --------------------------------------------------------------------------
  * Health — the setup exit test. Every dependency reports separately so a

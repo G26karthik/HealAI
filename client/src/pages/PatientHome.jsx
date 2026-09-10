@@ -4,6 +4,7 @@ import { createRequest } from '../lib/api';
 import TriageResult from '../components/TriageResult';
 import OptionsList from '../components/OptionsList';
 import BookingConfirmed from '../components/BookingConfirmed';
+import PrescriptionFlow from '../components/PrescriptionFlow';
 
 const DURATIONS = [
   { label: 'Under an hour', hours: 0.5 },
@@ -102,16 +103,23 @@ export default function PatientHome() {
         <button className="text-sm font-medium text-blue-700 underline" onClick={() => setStage('result')}>
           ← Back to the priority
         </button>
-        <OptionsList
-          requestId={result.id}
-          kind={result.tierMeta.route}
-          tier={result.tier}
-          needsHumanReview={result.needsHumanReview}
-          onBooked={(res) => {
-            setBooking(res);
-            setStage('booked');
-          }}
-        />
+
+        {/* A medicine need starts from the prescription, not from a provider
+            list — you cannot rank pharmacies before you know what to dispense. */}
+        {result.tierMeta.route === 'pharmacy' ? (
+          <PrescriptionFlow requestId={result.id} />
+        ) : (
+          <OptionsList
+            requestId={result.id}
+            kind={result.tierMeta.route}
+            tier={result.tier}
+            needsHumanReview={result.needsHumanReview}
+            onBooked={(res) => {
+              setBooking(res);
+              setStage('booked');
+            }}
+          />
+        )}
       </div>
     );
   }

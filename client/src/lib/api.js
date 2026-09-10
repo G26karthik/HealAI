@@ -30,3 +30,10 @@ export const createAssignment = (body) => api.post('/assignments', body).then((r
 export const getCapacity = () => api.get('/assignments/capacity').then((r) => r.data);
 export const getFleet = (kinds = 'ambulance') =>
   api.get('/fleet', { params: { kinds } }).then((r) => r.data);
+
+export const scanPrescription = (image, requestId) =>
+  api.post('/pharmacy/prescription', { image, requestId }, { timeout: 90000 }).then((r) => r.data);
+export const planOrder = (requestId, lines) =>
+  api.post('/pharmacy/plan', { requestId, lines }).then((r) => r.data);
+export const placeOrder = (body) => api.post('/pharmacy/order', body).then((r) => r.data);
+export const getLadders = () => api.get('/pharmacy/ladders').then((r) => r.data);

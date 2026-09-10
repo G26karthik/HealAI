@@ -4,12 +4,17 @@ import { z } from 'zod';
 import { dbReady } from '../db.js';
 import { Assignment, Request, Resource } from '../models.js';
 import { emitDispatch, emitRequest } from '../lib/realtime.js';
-import { matchWithFallback } from '../services/matcher.js';
+import { requirementsFor } from '../services/matcher.js';
+import { findWithLadder, LADDERS, rungMeta } from '../services/fallback.js';
 import { trackRun } from '../services/sim.js';
 import { logHuman } from '../services/audit.js';
 import { ASSIGNMENT_STATUS, REQUEST_STATES, RESOURCE_KINDS, TIERS } from '../../../shared/enums.js';
 
 export const assignmentsRouter = Router();
+
+// A pharmacy resource is matched under the "medicine" ladder — the ladder is
+// named for the need, not for the kind of thing that satisfies it.
+const LADDER_FOR = { ambulance: 'ambulance', doctor: 'doctor', pharmacy: 'medicine' };
 
 const step = (state, by, reason) => ({ state, at: new Date(), by, reason });
 
@@ -29,7 +34,8 @@ assignmentsRouter.get('/options', async (req, res, next) => {
     const request = await Request.findById(requestId).lean();
     if (!request) return res.status(404).json({ error: 'request not found' });
 
-    const match = await matchWithFallback(request, kind);
+    const match = await findWithLadder(request, kind);
+    const requirements = match.requirements ?? requirementsFor(request);
 
     res.json({
       requestId,
@@ -37,12 +43,18 @@ assignmentsRouter.get('/options', async (req, res, next) => {
       tier: request.tier,
       // p90 for T1/T2 (the worst case is what matters in an emergency),
       // p50 for T3/T4 (throughput matters). Same numbers, two risk postures.
-      riskPosture: match.requirements.riskPosture,
-      requirements: match.requirements,
+      riskPosture: requirements.riskPosture,
+      requirements,
       options: match.options,
       rejected: match.rejected,
-      fallback: match.fallback,
-      candidatesScanned: match.candidatesScanned,
+      // Which rung of the documented ladder answered, plus every rung tried.
+      rung: rungMeta(LADDER_FOR[kind], match.rung),
+      isFallback: match.rung !== LADDERS[LADDER_FOR[kind]][0].id,
+      exhausted: Boolean(match.exhausted),
+      attempts: match.attempts,
+      extra: match.extra ?? null,
+      ladder: LADDERS[LADDER_FOR[kind]],
+      candidatesScanned: match.candidatesScanned ?? 0,
     });
   } catch (err) {
     next(err);
@@ -82,7 +94,8 @@ assignmentsRouter.post('/', async (req, res, next) => {
     }
 
     // Re-score at commit time rather than trusting a cost the client sent.
-    const match = await matchWithFallback(request, body.kind);
+    const match = await findWithLadder(request, body.kind);
+    const fallback = match.rung !== LADDERS[LADDER_FOR[body.kind]][0].id ? rungMeta(LADDER_FOR[body.kind], match.rung) : null;
     const chosen = match.options.find((o) => o.resourceId === body.resourceId);
     if (!chosen) {
       return res.status(409).json({
@@ -150,12 +163,12 @@ assignmentsRouter.post('/', async (req, res, next) => {
       step(REQUEST_STATES.CONFIRMED, body.by, `${locked.name} assigned — ETA ${chosen.eta.p50Min}–${chosen.eta.p90Min} min`),
       step(nextState, 'system', body.kind === 'ambulance' ? 'unit en route' : 'appointment scheduled')
     );
-    if (match.fallback) {
+    if (fallback) {
       request.fallbacksUsed.push({
-        ladder: body.kind,
-        rung: match.fallback.rung,
+        ladder: LADDER_FOR[body.kind],
+        rung: fallback.id,
         at: new Date(),
-        note: match.fallback.note,
+        note: fallback.note,
       });
     }
     await request.save();
@@ -172,7 +185,7 @@ assignmentsRouter.post('/', async (req, res, next) => {
       assignment: assignment.toObject(),
       resource: { id: String(locked._id), name: locked.name, kind: body.kind, attrs: locked.attrs, loc: locked.loc },
       request: { id: String(request._id), state: nextState, tier: request.tier },
-      fallback: match.fallback,
+      fallback,
     };
 
     // Hand the vehicle to the world clock — from here it physically moves.

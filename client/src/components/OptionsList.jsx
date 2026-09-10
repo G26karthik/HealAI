@@ -168,12 +168,35 @@ export default function OptionsList({ requestId, kind, tier, needsHumanReview, o
         </p>
       </div>
 
-      {data.fallback && (
+      {/* Which rung of the documented ladder answered. Shown whenever it is not
+          the first one, because "we could not give you the ideal thing" is
+          information the patient is owed. */}
+      {data.isFallback && data.rung && (
         <div className="rounded-lg border border-amber-300 bg-amber-50 p-3">
           <p className="text-sm font-semibold text-amber-900">
-            <span aria-hidden="true">▲</span> Fallback used — {data.fallback.rung.replace(/-/g, ' ')}
+            <span aria-hidden="true">▲</span> {data.rung.label}
           </p>
-          <p className="mt-0.5 text-xs text-amber-900">{data.fallback.note}</p>
+          <p className="mt-0.5 text-xs text-amber-900">{data.rung.note}</p>
+          {data.attempts?.length > 1 && (
+            <p className="mt-1.5 text-xs text-amber-900">
+              Tried first:{' '}
+              {data.attempts
+                .slice(0, -1)
+                .map((a) => a.rung.replace(/-/g, ' '))
+                .join(', ')}
+              .
+            </p>
+          )}
+        </div>
+      )}
+
+      {data.exhausted && data.extra && (
+        <div className="rounded-xl border-2 border-red-400 bg-red-50 p-4">
+          <h3 className="font-semibold text-red-900">No vehicle can reach you in a useful time</h3>
+          <p className="mt-1 text-sm text-red-900">
+            Nearest emergency department: <strong>{data.extra.name}</strong>, {data.extra.distanceKm} km
+            away. A coordinator is calling you now.
+          </p>
         </div>
       )}
 
