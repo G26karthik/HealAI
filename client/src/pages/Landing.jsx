@@ -121,10 +121,16 @@ function Hero({ user }) {
               <span aria-hidden="true">🚑</span> Get help now
             </Link>
             <Link
+              to="/medicines"
+              className="btn border border-white/25 bg-white/10 px-6 py-3.5 text-base text-white backdrop-blur hover:bg-white/20"
+            >
+              <span aria-hidden="true">💊</span> Order medicines
+            </Link>
+            <Link
               to="/dispatch"
               className="btn border border-white/25 bg-white/10 px-6 py-3.5 text-base text-white backdrop-blur hover:bg-white/20"
             >
-              Open the dispatcher console
+              Dispatcher console
             </Link>
             {!user && (
               <Link to="/login" className="btn px-5 py-3.5 text-base text-brand-100 hover:bg-white/10">

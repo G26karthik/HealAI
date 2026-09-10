@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { SYMPTOM_TAGS, TRIAGE_DISCLAIMER } from '@shared/enums.js';
 import { createRequest } from '../lib/api';
 import TriageResult from '../components/TriageResult';
@@ -138,6 +139,20 @@ export default function PatientHome() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
+      {/* Not everyone arriving here is unwell. Someone restocking a repeat
+          prescription should not have to describe symptoms to reach a pharmacy. */}
+      <Link
+        to="/medicines"
+        className="card card-hover flex items-center gap-3 p-3 text-sm"
+      >
+        <span aria-hidden="true" className="text-xl">💊</span>
+        <span className="flex-1">
+          <span className="font-semibold">Just need medicines?</span>{' '}
+          <span className="text-muted">Photograph a prescription and skip the questions.</span>
+        </span>
+        <span aria-hidden="true" className="text-muted">→</span>
+      </Link>
+
       <form onSubmit={submit} className="space-y-4">
         <div className="card p-4">
           <label htmlFor="desc" className="block text-lg font-semibold">

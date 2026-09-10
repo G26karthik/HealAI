@@ -6,11 +6,13 @@ import { useAuth } from './context/AuthContext';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import PatientHome from './pages/PatientHome';
+import Medicines from './pages/Medicines';
 import Dispatcher from './pages/Dispatcher';
 
 const NAV = [
   { to: '/', label: 'Home', end: true },
   { to: '/help', label: 'Get help' },
+  { to: '/medicines', label: 'Medicines' },
   { to: '/dispatch', label: 'Dispatcher' },
 ];
 
@@ -224,6 +226,11 @@ function Footer() {
               </Link>
             </li>
             <li>
+              <Link to="/medicines" className="hover:text-ink hover:underline">
+                Order medicines
+              </Link>
+            </li>
+            <li>
               <Link to="/dispatch" className="hover:text-ink hover:underline">
                 Dispatcher console
               </Link>
@@ -264,6 +271,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/help" element={<PatientHome />} />
+          <Route path="/medicines" element={<Medicines />} />
           <Route path="/dispatch" element={<Dispatcher />} />
           <Route path="/login" element={<Login />} />
           <Route
